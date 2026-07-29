@@ -13,9 +13,9 @@ class Download:
     size: int
     downloaded: int
     status: DownloadStatus
-    def progress(self) -> str:
-        if self.size == 0: return "Размер файла 0 Мб"
-        return f"{self.downloaded/self.size*100}%"
+    def progress(self) -> int:
+        if self.size == 0: return 0
+        return self.downloaded/self.size*100
 
 
 
