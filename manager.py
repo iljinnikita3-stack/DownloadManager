@@ -2,6 +2,14 @@ from models import Download, DownloadStatus
 from typing import Optional
 import asyncio
 from random import randint
+from datetime import datetime
+
+#ЦВЕТА
+RED = "\033[31m"
+YELLOW = "\033[33m"
+BLUE = "\033[36m"
+RESET = "\033[0m"
+GREEN = "\033[32m"
 
 class DownloadManager:
     def __init__(self) -> None:
@@ -31,20 +39,26 @@ class DownloadManager:
         
     async def download_file(self, download: Download) -> None:
         try:
-            print(f"Начинается загрузка {download.name}")
+            now = datetime.now()
+            print(f"{GREEN}[{now.hour:02d}:{now.minute:02d}:{now.second:02d}]{RESET} {YELLOW}Начинается загрузка {download.name}{RESET}")
+            
             download.status = DownloadStatus.DOWNLOADING
             while download.size != download.downloaded:
                 await asyncio.sleep(1)
                 download.downloaded += randint(0, download.size // 3)
                 if download.downloaded > download.size:
                     download.downloaded = download.size
-                print(f"{download.progress():.1f}%")
+                print(f"{BLUE}{download.name} прогресс {download.progress():.1f}%{RESET}")
+                
             download.status = DownloadStatus.COMPLETED
-            print(f"Загрузка {download.name} завершена")
+            now = datetime.now()
+            print(f"{GREEN}[{now.hour:02d}:{now.minute:02d}:{now.second:02d}]{RESET} {YELLOW}Загрузка {download.name} завершена{RESET}")
+            
         except asyncio.CancelledError:
-            print(f"Загрузка отменена, загружено {download.progress()} Мб из {download.size} Мб")
+            print(f"{RED}Загрузка отменена, загружено {download.downloaded} Мб из {download.size} Мб{RESET}")
             download.status = DownloadStatus.CANCELLED
-        
+
+      
     async def parallel_downloads(self, active_downloads: list[Download]) -> None:
         keys = [download.name for download in active_downloads]
         values = [asyncio.create_task(self.download_file(file)) for file in active_downloads]
@@ -54,7 +68,11 @@ class DownloadManager:
     def cancel_download(self, download: Download) -> None:
         self.tasks[download.name].cancel()
         
-
-      
-    
+    async def monitor(self, active_downloads: list[Download]) -> None:
+        while sum([download.status in [DownloadStatus.CANCELLED, DownloadStatus.COMPLETED] for download in active_downloads]) != len(active_downloads):
+            print("="*40)
+            for download in active_downloads:
+                print(download.name.ljust(20), f"{download.progress():.1f}%".rjust(8), download.status.name)
+            print("="*40)
+            await asyncio.sleep(1)
     
