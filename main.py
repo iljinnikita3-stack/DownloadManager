@@ -27,8 +27,9 @@ async def main():
     for d in ds:
         manager.add_download(d)
     downloads = asyncio.create_task(manager.parallel_downloads(ds))
+    monitor = asyncio.create_task(manager.monitor(ds))
     await asyncio.sleep(3)
     manager.cancel_download(d2)
-    await downloads
+    await asyncio.gather(downloads, monitor)
 
 asyncio.run(main())
